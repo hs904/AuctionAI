@@ -1,4 +1,4 @@
-name: auction_env
+name: auction
 channels:
   - conda-forge
   - defaults
@@ -9,7 +9,9 @@ dependencies:
   - scikit-learn
   - matplotlib
   - seaborn
-  - tensorflow
-  - keras
+  - pytorch
+  - torchvision
+  - torchaudio
   - jupyter
   - missingno
+  - pip
