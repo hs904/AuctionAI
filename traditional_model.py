@@ -2,13 +2,11 @@ import numpy as np
 import pandas as pd
 import joblib
 import os
-import xgboost as xgb
+import torch
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -23,23 +21,19 @@ y = df["log_winner_expenses"].values
 # Split data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Standardize features (important for regression models)
+# Standardize features
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# Save test data for later comparison
+# Save test data
 np.save("./Data/X_test.npy", X_test_scaled)
 np.save("./Data/y_test.npy", y_test)
 
-# Define traditional models
+# Define linear models
 models = {
     "OLS Regression": LinearRegression(),
-    "Ridge Regression": Ridge(alpha=1.0),
-    "Lasso Regression": Lasso(alpha=0.1),
-    "Decision Tree": DecisionTreeRegressor(max_depth=5),
-    "Random Forest": RandomForestRegressor(n_estimators=100, max_depth=5, random_state=42),
-    "XGBoost": xgb.XGBRegressor(n_estimators=100, max_depth=5, learning_rate=0.1, random_state=42)
+    "Ridge Regression": Ridge(alpha=1.0)
 }
 
 # Dictionary to store results
@@ -62,17 +56,35 @@ for name, model in models.items():
     # Save trained model
     joblib.dump(model, f'./Model/{name.replace(" ", "_")}.pkl')
 
-# Convert results to DataFrame for better visualization
-results_df = pd.DataFrame(results).T
+# Load and evaluate trained neural network
+from Model_training import ImprovedNeuralNetwork
+model_nn = ImprovedNeuralNetwork(input_dim=X_test.shape[1])
+model_nn = torch.load("./Model/trained_model.pth")
+model_nn.eval()
 
-# Save results
+X_test_tensor = torch.tensor(X_test_scaled, dtype=torch.float32)
+y_test_tensor = torch.tensor(y_test, dtype=torch.float32).view(-1, 1)
+
+with torch.no_grad():
+    y_pred_tensor = model_nn(X_test_tensor).detach().numpy().flatten()
+
+# Compute performance metrics for NN
+mae = mean_absolute_error(y_test, y_pred_tensor)
+mse = mean_squared_error(y_test, y_pred_tensor)
+rmse = np.sqrt(mse)
+r2 = r2_score(y_test, y_pred_tensor)
+
+results["Neural Network"] = {"MAE": mae, "MSE": mse, "RMSE": rmse, "R² Score": r2}
+
+# Convert results to DataFrame
+results_df = pd.DataFrame(results).T
 results_df.to_csv("./Evaluation_plots/model_comparison.csv", index=True)
 
 # Print results
 print("\nModel Performance Comparison:")
 print(results_df)
 
-# Visualization - Bar Plots for Comparison
+# Visualization
 plot_dir = "Evaluation_plots"
 os.makedirs(plot_dir, exist_ok=True)
 
