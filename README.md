@@ -4,6 +4,7 @@
 This repository presents a complete pipeline for predicting winner expenses in closed online auctions on the Bidoo platform. It compares traditional regression models with a deep machine learning approach (Neural Network), supported by detailed EDA, preprocessing, model training, and evaluation.
 
 ---
+Data Source (Kaggle): https://www.kaggle.com/datasets/federicominutoli/bidoo-closed-auctions 
 
 ## 📁 Project Structure
 
